@@ -9,3 +9,4 @@ bin
 #current
 *.csv
 *.tsv
+*.txt
