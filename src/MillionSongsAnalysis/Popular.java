@@ -14,11 +14,13 @@ import java.util.Map.Entry;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 
+//popularity - if a user plays 100 times versus a song played 1 time by 100 different users
+//so considering both - number of users and playcount
 
-public class TopTen extends Configured implements Tool {
+public class Popular extends Configured implements Tool {
 	
 	 //Mappers
-	 public static class TopTenMapper extends Mapper<LongWritable, Text, Text, Text>
+	 public static class PopularMapper extends Mapper<LongWritable, Text, Text, Text>
 	 {
 	      private Text songId = new Text();
 	      @Override
@@ -38,7 +40,6 @@ public class TopTen extends Configured implements Tool {
 	      @Override
 	      public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException
 	      {
-	            //taking one line at a time from input file and tokenizing the same
 	            String line = value.toString();
 	            String[] arr = line.split(",");            
 	            sId.set(arr[0]);
@@ -47,14 +48,17 @@ public class TopTen extends Configured implements Tool {
 	}
 	 
 	 //Reducer
-	 public static class TopTenReducer extends Reducer <Text, Text, Text, Text>
+	 public static class PopularReducer extends Reducer <Text, Text, Text, Text>
 	 {
-		 HashMap<Text, IntWritable> playcountmap = new HashMap<Text, IntWritable>();
+		 HashMap<String, Integer> playcountmap = new HashMap<String, Integer>();
+		 HashMap<Text, FloatWritable> finalmap = new HashMap<Text, FloatWritable>();
+		 static int denom = 0;
 		 public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException 
 		 {
 			 String name = "";
 			 int c = 0;
 			 int x;
+			 int num_of_users = 0;
 			 for (Text t : values) 
 			 { 
 			 String[] parts = t.toString().split(",");
@@ -62,6 +66,7 @@ public class TopTen extends Configured implements Tool {
 			 {
 				 x = Integer.parseInt(parts[1]);
 				 c = c + x;
+				 num_of_users = num_of_users + 1;
 			 } 
 			 else if (parts[0].equals("title")) 
 			 {
@@ -73,18 +78,24 @@ public class TopTen extends Configured implements Tool {
 			 }
 			 }
 			 
-			 String str = String.format("%s\t%s", key.toString(), name);	//songId + title
+			 String str = String.format("%s\t%s\t%d", key.toString(), name, num_of_users);	//songId + title + number of users
 			 if(c!=0) {
-				 //String s = String.format("\t:\t%d", c);	//playcount
-				 //context.write(new Text(str), new Text(s));
-				 playcountmap.put(new Text(str), new IntWritable(c));
+				 denom = denom + c*num_of_users;
+				 //System.out.println(c+"-"+num_of_users+"-"+c*num_of_users);
+				 playcountmap.put(str, c*num_of_users);
 			 }
 		 }
 		 
 		 @Override
 		  public void cleanup(Context context)
-		      throws IOException, InterruptedException {		
-			Map<Text, IntWritable> sortedMap = sortByValues(playcountmap);
+		      throws IOException, InterruptedException {
+			float xi;
+			for(Map.Entry<String, Integer> ent : playcountmap.entrySet()) {
+				xi = (float)ent.getValue()/(float)denom;
+				finalmap.put(new Text(ent.getKey()),new FloatWritable(xi));
+			}
+			
+			Map<Text, FloatWritable> sortedMap = sortByValues(finalmap);
 	        int counter = 0;
 	        for (Text key : sortedMap.keySet()) {
 	            if (counter++ == 20) {
@@ -119,12 +130,12 @@ public class TopTen extends Configured implements Tool {
 		    Configuration conf = new Configuration();
 
 		    Job job = Job.getInstance(conf, "Top ten using reduce-side join");
-		    job.setJarByClass(TopTen.class);
-		    //job.setMapperClass(TopTenMapper.class);
-		    job.setReducerClass(TopTenReducer.class);
+		    job.setJarByClass(Popular.class);
+		    //job.setMapperClass(PopularMapper.class);
+		    job.setReducerClass(PopularReducer.class);
 		    job.setOutputKeyClass(Text.class);
 		    job.setOutputValueClass(Text.class);
-		    MultipleInputs.addInputPath(job, new Path(args[0]),TextInputFormat.class, TopTenMapper.class);
+		    MultipleInputs.addInputPath(job, new Path(args[0]),TextInputFormat.class, PopularMapper.class);
 		    MultipleInputs.addInputPath(job, new Path(args[1]),TextInputFormat.class, InfoMapper.class);
 		    Path out = new Path(args[2]);
 		    FileOutputFormat.setOutputPath(job, out);
@@ -135,7 +146,7 @@ public class TopTen extends Configured implements Tool {
 		  public static void main(String[] args) throws Exception
 		  {
 		        // this main function will call run method defined above.
-			  	int res = ToolRunner.run(new Configuration(), new TopTen(),args);
+			  	int res = ToolRunner.run(new Configuration(), new Popular(),args);
 		        System.exit(res);
 		  }
 		}

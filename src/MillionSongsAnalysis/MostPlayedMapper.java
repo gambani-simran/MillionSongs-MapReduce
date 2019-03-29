@@ -4,7 +4,7 @@ import java.io.IOException;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Mapper;
  
-public class PopularSongMapper extends Mapper<LongWritable, Text, Text, IntWritable>
+public class MostPlayedMapper extends Mapper<LongWritable, Text, Text, IntWritable>
 {
       private Text songId = new Text();
       private IntWritable count = new IntWritable();

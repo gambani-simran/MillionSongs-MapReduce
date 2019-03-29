@@ -7,7 +7,7 @@ import java.util.Map.Entry;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Reducer;
  
-public class PopularSongReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+public class MostPlayedReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
 	//private int max = 0;
 	//private Text popular = new Text("");
 	HashMap<Text, IntWritable> playcountmap = new HashMap<Text, IntWritable>();

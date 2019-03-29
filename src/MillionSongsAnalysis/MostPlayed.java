@@ -10,14 +10,14 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 //Top 10 most played songs
-public class PopularSong extends Configured implements Tool {
+public class MostPlayed extends Configured implements Tool {
   public int run(String[] args) throws Exception {
     Configuration conf = new Configuration();
 
     Job job = Job.getInstance(conf, "Song play count");
-    job.setJarByClass(PopularSong.class);
-    job.setMapperClass(PopularSongMapper.class);
-    job.setReducerClass(PopularSongReducer.class);
+    job.setJarByClass(MostPlayed.class);
+    job.setMapperClass(MostPlayedMapper.class);
+    job.setReducerClass(MostPlayedReducer.class);
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(IntWritable.class);
     Path inp = new Path(args[0]);
@@ -30,7 +30,7 @@ public class PopularSong extends Configured implements Tool {
 
   public static void main(String[] args) throws Exception
   {
-    int res = ToolRunner.run(new Configuration(), new PopularSong(),args);
+    int res = ToolRunner.run(new Configuration(), new MostPlayed(),args);
         System.exit(res);
   }
 }
